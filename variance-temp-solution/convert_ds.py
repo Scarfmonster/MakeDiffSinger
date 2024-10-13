@@ -10,6 +10,8 @@ import numpy as np
 from tqdm import tqdm
 
 from get_pitch import get_pitch
+from tension import get_tension_base_harmonic
+from decomposed_waveform import DecomposedWaveformPyWorld
 
 
 def try_resolve_note_slur_by_matching(ph_dur, ph_num, note_dur, tol):
@@ -184,7 +186,18 @@ def csv2ds(transcription_file, wavs_folder, tolerance, hop_size, sample_rate, pe
             wav, _ = librosa.load(wav_fn, sr=sample_rate, mono=True)
             # length = len(wav) + (win_size - hop_size) // 2 + (win_size - hop_size + 1) // 2
             # length = ceil((length - win_size) / hop_size)
-            f0_timestep, f0, _ = get_pitch(pe, wav, hop_size, sample_rate)
+            f0_timestep, f0, uv = get_pitch(pe, wav, hop_size, sample_rate)
+            dec_waveform = DecomposedWaveformPyWorld(
+                waveform=wav,
+                samplerate=sample_rate,
+                f0=f0 * ~uv,
+                hop_size=hop_size,
+                fft_size=2048,
+                win_size=2048,
+            )
+            tension = get_tension_base_harmonic(
+                dec_waveform, None, None, length=len(f0), domain="logit"
+            )
             ds_content = [
                 {
                     "offset": 0.0,
@@ -197,6 +210,8 @@ def csv2ds(transcription_file, wavs_folder, tolerance, hop_size, sample_rate, pe
                     "note_slur": " ".join(map(str, note_slur)),
                     "f0_seq": " ".join(map("{:.1f}".format, f0)),
                     "f0_timestep": str(f0_timestep),
+                    "tension": " ".join(str(round(t, 4)) for t in tension),
+                    "tension_timestep": str(f0_timestep),
                 }
             ]
             if note_glide:
