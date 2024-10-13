@@ -16,7 +16,9 @@ def try_resolve_note_slur_by_matching(ph_dur, ph_num, note_dur, tol):
     if len(ph_num) > len(note_dur):
         raise ValueError("ph_num should not be longer than note_dur.")
     ph_num_cum = np.cumsum([0] + ph_num)
-    word_pos = np.cumsum([sum(ph_dur[l:r]) for l, r in zip(ph_num_cum[:-1], ph_num_cum[1:])])
+    word_pos = np.cumsum(
+        [sum(ph_dur[l:r]) for l, r in zip(ph_num_cum[:-1], ph_num_cum[1:])]
+    )
     note_pos = np.cumsum(note_dur)
     new_note_dur = []
 
@@ -44,7 +46,9 @@ def try_resolve_note_slur_by_matching(ph_dur, ph_num, note_dur, tol):
 
 def try_resolve_slur_by_slicing(ph_dur, ph_num, note_seq, note_dur, tol):
     ph_num_cum = np.cumsum([0] + ph_num)
-    word_pos = np.cumsum([sum(ph_dur[l:r]) for l, r in zip(ph_num_cum[:-1], ph_num_cum[1:])])
+    word_pos = np.cumsum(
+        [sum(ph_dur[l:r]) for l, r in zip(ph_num_cum[:-1], ph_num_cum[1:])]
+    )
     note_pos = np.cumsum(note_dur)
     new_note_seq = []
     new_note_dur = []
@@ -144,13 +148,21 @@ def csv2ds(transcription_file, wavs_folder, tolerance, hop_size, sample_rate, pe
             ph_num = list(map(int, trans_line["ph_num"].strip().split()))
             note_seq = trans_line["note_seq"].strip().split()
             note_dur = list(map(Decimal, trans_line["note_dur"].strip().split()))
-            note_glide = trans_line["note_glide"].strip().split() if "note_glide" in trans_line else None
+            note_glide = (
+                trans_line["note_glide"].strip().split()
+                if "note_glide" in trans_line
+                else None
+            )
 
             assert wav_fn.is_file(), f"{item_name}.wav not found."
             assert len(ph_dur) == sum(ph_num), "ph_dur and ph_num mismatch."
-            assert len(note_seq) == len(note_dur), "note_seq and note_dur should have the same length."
+            assert len(note_seq) == len(
+                note_dur
+            ), "note_seq and note_dur should have the same length."
             if note_glide:
-                assert len(note_glide) == len(note_seq), "note_glide and note_seq should have the same length."
+                assert len(note_glide) == len(
+                    note_seq
+                ), "note_glide and note_seq should have the same length."
             assert isclose(
                 sum(ph_dur), sum(note_dur), abs_tol=tolerance
             ), f"[{item_name}] ERROR: mismatch total duration: {sum(ph_dur) - sum(note_dur)}"
@@ -192,7 +204,9 @@ def csv2ds(transcription_file, wavs_folder, tolerance, hop_size, sample_rate, pe
             out_ds[ds_fn] = ds_content
             if ds_fn.exists():
                 out_exists.append(ds_fn)
-    if not out_exists or click.confirm(f"Overwrite {len(out_exists)} existing DS files?", abort=False):
+    if not out_exists or click.confirm(
+        f"Overwrite {len(out_exists)} existing DS files?", abort=False
+    ):
         for ds_fn, ds_content in out_ds.items():
             with open(ds_fn, "w", encoding="utf-8") as f:
                 json.dump(ds_content, f, ensure_ascii=False, indent=4)
@@ -203,12 +217,16 @@ def csv2ds(transcription_file, wavs_folder, tolerance, hop_size, sample_rate, pe
 @click.command(help="Convert DS files to a transcription and curve files")
 @click.argument(
     "ds_folder",
-    type=click.Path(file_okay=False, resolve_path=True, exists=True, path_type=pathlib.Path),
+    type=click.Path(
+        file_okay=False, resolve_path=True, exists=True, path_type=pathlib.Path
+    ),
     metavar="FOLDER",
 )
 @click.argument(
     "transcription_file",
-    type=click.Path(file_okay=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+    type=click.Path(
+        file_okay=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
     metavar="TRANSCRIPTIONS",
 )
 @click.option(
@@ -234,10 +252,14 @@ def ds2csv(ds_folder, transcription_file, overwrite):
                     {
                         "name": fp.stem,
                         "ph_seq": ds[0]["ph_seq"],
-                        "ph_dur": " ".join(str(round(Decimal(d), 6)) for d in ds[0]["ph_dur"].split()),
+                        "ph_dur": " ".join(
+                            str(round(Decimal(d), 6)) for d in ds[0]["ph_dur"].split()
+                        ),
                         "ph_num": ds[0]["ph_num"],
                         "note_seq": ds[0]["note_seq"],
-                        "note_dur": " ".join(str(round(Decimal(d), 6)) for d in ds[0]["note_dur"].split()),
+                        "note_dur": " ".join(
+                            str(round(Decimal(d), 6)) for d in ds[0]["note_dur"].split()
+                        ),
                         # "note_slur": ds[0]["note_slur"],
                     }
                 )
@@ -255,10 +277,16 @@ def ds2csv(ds_folder, transcription_file, overwrite):
                         {
                             "name": item_name,
                             "ph_seq": sub_ds["ph_seq"],
-                            "ph_dur": " ".join(str(round(Decimal(d), 6)) for d in sub_ds["ph_dur"].split()),
+                            "ph_dur": " ".join(
+                                str(round(Decimal(d), 6))
+                                for d in sub_ds["ph_dur"].split()
+                            ),
                             "ph_num": sub_ds["ph_num"],
                             "note_seq": sub_ds["note_seq"],
-                            "note_dur": " ".join(str(round(Decimal(d), 6)) for d in sub_ds["note_dur"].split()),
+                            "note_dur": " ".join(
+                                str(round(Decimal(d), 6))
+                                for d in sub_ds["note_dur"].split()
+                            ),
                             # "note_slur": sub_ds["note_slur"],
                         }
                     )
@@ -280,7 +308,8 @@ def ds2csv(ds_folder, transcription_file, overwrite):
                 "note_seq",
                 "note_dur",
                 # "note_slur",
-            ] + (["note_glide"] if any_with_glide else []),
+            ]
+            + (["note_glide"] if any_with_glide else []),
         )
         writer.writeheader()
         writer.writerows(transcriptions)
